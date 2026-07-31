@@ -1,0 +1,432 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum TaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  CANCELED
+}
+
+enum TaskPriority {
+  NO_PRIORITY
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ModuleStatus {
+  ACTIVE
+  BETA
+  PLANNED
+  DISABLED
+}
+
+enum AiProvider {
+  OPENAI
+  ANTHROPIC
+  LOCAL
+}
+
+enum FormStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+}
+
+enum FormFieldType {
+  WELCOME
+  NAME
+  EMAIL
+  PHONE
+  CPF
+  CNPJ
+  SHORT_TEXT
+  LONG_TEXT
+  NUMBER
+  CURRENCY
+  DATE
+  ADDRESS
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  SELECT
+  TERMS
+  MESSAGE
+  THANK_YOU
+}
+
+enum SubmissionStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+  SPAM
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+enum FormLogicOperator {
+  EQUALS
+  NOT_EQUALS
+  CONTAINS
+  NOT_CONTAINS
+  IS_EMPTY
+  IS_NOT_EMPTY
+  GREATER_THAN
+  LESS_THAN
+}
+
+enum FormLogicAction {
+  SHOW
+  HIDE
+  GOTO
+  SUBMIT
+}
+
+model User {
+  id            String       @id @default(cuid())
+  name          String?
+  email         String       @unique
+  emailVerified DateTime?
+  image         String?
+  memberships   Membership[]
+  notes         Note[]       @relation("NoteAuthor")
+  createdTasks  Task[]       @relation("TaskCreator")
+  assignedTasks Task[]       @relation("TaskAssignee")
+  createdForms  Form[]       @relation("FormCreator")
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Workspace {
+  id          String          @id @default(cuid())
+  name        String
+  slug        String          @unique
+  description String?
+  memberships Membership[]
+  projects    Project[]
+  notes       Note[]
+  tasks       Task[]
+  modules     WorkspaceModule[]
+  aiConfigs   AiProviderConfig[]
+  forms       Form[]
+  submissions FormSubmission[]
+  leads       Lead[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  archivedAt  DateTime?
+}
+
+model Membership {
+  id          String        @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        WorkspaceRole @default(MEMBER)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime      @default(now())
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId, role])
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  workspaceId String
+  name        String
+  slug        String
+  description String?
+  icon        String?
+  status      ProjectStatus @default(PLANNING)
+  progress    Int           @default(0)
+  dueDate     DateTime?
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  notes       Note[]
+  tasks       Task[]
+  modules     WorkspaceModule[]
+  forms       Form[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  archivedAt  DateTime?
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId, status])
+}
+
+model Note {
+  id          String    @id @default(cuid())
+  workspaceId String
+  projectId   String?
+  authorId    String
+  parentId    String?
+  title       String
+  slug        String
+  content     String    @db.Text
+  icon        String?
+  isFavorite  Boolean   @default(false)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  author      User      @relation("NoteAuthor", fields: [authorId], references: [id])
+  parent      Note?     @relation("NoteTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Note[]    @relation("NoteTree")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  archivedAt  DateTime?
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId, updatedAt])
+  @@index([projectId])
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  workspaceId String
+  projectId   String?
+  creatorId   String
+  assigneeId  String?
+  parentId    String?
+  code        Int
+  title       String
+  description String?      @db.Text
+  status      TaskStatus   @default(BACKLOG)
+  priority    TaskPriority @default(NO_PRIORITY)
+  position    Int          @default(0)
+  dueDate     DateTime?
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project     Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  creator     User         @relation("TaskCreator", fields: [creatorId], references: [id])
+  assignee    User?        @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  parent      Task?        @relation("TaskTree", fields: [parentId], references: [id], onDelete: SetNull)
+  subtasks    Task[]       @relation("TaskTree")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  completedAt DateTime?
+  archivedAt  DateTime?
+
+  @@unique([workspaceId, code])
+  @@index([workspaceId, status, position])
+  @@index([projectId])
+}
+
+model ModuleDefinition {
+  id          String            @id @default(cuid())
+  key         String            @unique
+  name        String
+  description String
+  icon        String?
+  version     String            @default("0.1.0")
+  workspaces  WorkspaceModule[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model WorkspaceModule {
+  id           String           @id @default(cuid())
+  workspaceId  String
+  moduleId     String
+  projectId    String?
+  status       ModuleStatus     @default(ACTIVE)
+  settingsJson Json?
+  workspace    Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  module       ModuleDefinition @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  project      Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([workspaceId, moduleId])
+  @@index([workspaceId, status])
+}
+
+model AiProviderConfig {
+  id                 String     @id @default(cuid())
+  workspaceId        String
+  provider           AiProvider
+  label              String
+  defaultModel       String?
+  encryptedSecretRef String?
+  isEnabled          Boolean    @default(false)
+  settingsJson       Json?
+  workspace          Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  @@unique([workspaceId, provider])
+}
+
+model Form {
+  id                  String           @id @default(cuid())
+  workspaceId         String
+  projectId           String?
+  createdById         String
+  name                String
+  slug                String           @unique
+  description         String?
+  status              FormStatus       @default(DRAFT)
+  welcomeTitle        String           @default("Olá! Vamos começar?")
+  welcomeDescription String?
+  thankYouTitle       String           @default("Tudo certo!")
+  thankYouDescription String?
+  buttonLabel         String           @default("Continuar")
+  primaryColor        String           @default("#6d4aff")
+  backgroundColor     String           @default("#ffffff")
+  fontFamily          String           @default("Geist")
+  borderRadius        Int              @default(12)
+  logoUrl             String?
+  collectPartial      Boolean          @default(true)
+  notifyEmail         Boolean          @default(true)
+  limitDuplicate      Boolean          @default(false)
+  workspace           Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project             Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdBy           User             @relation("FormCreator", fields: [createdById], references: [id])
+  fields              FormField[]
+  logicRules          FormLogicRule[]
+  submissions         FormSubmission[]
+  publishedAt         DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  archivedAt          DateTime?
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId, status])
+  @@index([projectId])
+}
+
+model FormField {
+  id              String           @id @default(cuid())
+  formId          String
+  key             String
+  type            FormFieldType
+  title           String
+  description     String?
+  placeholder     String?
+  position        Int
+  isRequired      Boolean          @default(false)
+  optionsJson     Json?
+  settingsJson    Json?
+  form            Form             @relation(fields: [formId], references: [id], onDelete: Cascade)
+  answers         FormAnswer[]
+  sourceRules     FormLogicRule[]   @relation("LogicSourceField")
+  targetRules     FormLogicRule[]   @relation("LogicTargetField")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  archivedAt      DateTime?
+
+  @@unique([formId, key])
+  @@unique([formId, position])
+  @@index([formId, type])
+}
+
+model FormLogicRule {
+  id            String            @id @default(cuid())
+  formId        String
+  sourceFieldId String
+  targetFieldId String?
+  operator      FormLogicOperator
+  action        FormLogicAction
+  valueJson     Json?
+  priority      Int               @default(0)
+  form          Form              @relation(fields: [formId], references: [id], onDelete: Cascade)
+  sourceField   FormField         @relation("LogicSourceField", fields: [sourceFieldId], references: [id], onDelete: Cascade)
+  targetField   FormField?        @relation("LogicTargetField", fields: [targetFieldId], references: [id], onDelete: Cascade)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([formId, priority])
+}
+
+model FormSubmission {
+  id              String           @id @default(cuid())
+  externalKey     String?          @unique
+  workspaceId     String
+  formId          String
+  leadId          String?
+  status          SubmissionStatus @default(IN_PROGRESS)
+  respondentName  String?
+  respondentEmail String?
+  respondentPhone String?
+  utmJson         Json?
+  metadataJson    Json?
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  form            Form             @relation(fields: [formId], references: [id], onDelete: Cascade)
+  lead            Lead?            @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  answers         FormAnswer[]
+  startedAt       DateTime         @default(now())
+  lastSeenAt      DateTime         @default(now())
+  completedAt     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([workspaceId, status, createdAt])
+  @@index([formId, createdAt])
+  @@index([leadId])
+}
+
+model FormAnswer {
+  id           String         @id @default(cuid())
+  submissionId String
+  fieldId      String
+  valueJson    Json
+  textValue    String?
+  submission   FormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  field        FormField      @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([submissionId, fieldId])
+  @@index([fieldId])
+}
+
+model Lead {
+  id              String           @id @default(cuid())
+  workspaceId     String
+  name            String?
+  email           String?
+  emailNormalized String?
+  phone           String?
+  phoneNormalized String?
+  cpf             String?
+  cnpj            String?
+  status          LeadStatus       @default(NEW)
+  source          String?
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  submissions     FormSubmission[]
+  firstSeenAt     DateTime         @default(now())
+  lastSeenAt      DateTime         @default(now())
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  archivedAt      DateTime?
+
+  @@unique([workspaceId, emailNormalized])
+  @@unique([workspaceId, phoneNormalized])
+  @@index([workspaceId, status, lastSeenAt])
+}

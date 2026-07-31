@@ -1,0 +1,29 @@
+{
+  "name": "lab",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @lab/web",
+    "build": "npm run build --workspace @lab/web",
+    "lint": "npm run lint --workspace @lab/web",
+    "typecheck": "npm run typecheck --workspace @lab/web",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "db:generate": "npm run generate --workspace @lab/database",
+    "db:migrate": "npm run migrate --workspace @lab/database",
+    "db:seed": "npm run seed --workspace @lab/database",
+    "db:studio": "npm run studio --workspace @lab/database"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^3.2.4",
+    "vitest": "^3.2.4"
+  }
+}
