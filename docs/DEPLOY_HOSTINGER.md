@@ -5,7 +5,7 @@ O ambiente de produção usa quatro serviços:
 - `postgres`: banco privado, sem porta publicada;
 - `migrate`: aplica migrations e cria o primeiro administrador de forma idempotente;
 - `web`: aplicação Next.js em modo standalone;
-- `caddy`: proxy reverso com HTTPS automático.
+- `traefik`: proxy reverso já fornecido pelo template da Hostinger, conectado pela rede externa `traefik-proxy`.
 
 ## 1. Pré-requisitos
 
@@ -44,7 +44,7 @@ Regras importantes:
 docker compose --env-file .env.production -f compose.production.yml config
 docker compose --env-file .env.production -f compose.production.yml up -d --build
 docker compose --env-file .env.production -f compose.production.yml ps
-docker compose --env-file .env.production -f compose.production.yml logs -f migrate web caddy
+docker compose --env-file .env.production -f compose.production.yml logs -f migrate web
 ```
 
 O serviço `migrate` precisa terminar com código zero. Depois, acesse `https://SEU_DOMINIO/login` e use `INITIAL_ADMIN_EMAIL`, `INITIAL_ADMIN_PASSWORD` e `INITIAL_WORKSPACE_SLUG`.
@@ -71,7 +71,7 @@ docker compose --env-file .env.production -f compose.production.yml exec -T post
   pg_dump -U lab -d lab -Fc > "backups/lab-$(date +%F-%H%M).dump"
 ```
 
-Também faça backup dos volumes `media_data` e `caddy_data`. Teste a restauração periodicamente.
+Também faça backup do volume `media_data`. Teste a restauração periodicamente.
 
 ## 6. Diagnóstico
 
@@ -79,7 +79,7 @@ Também faça backup dos volumes `media_data` e `caddy_data`. Teste a restauraç
 curl -fsS https://SEU_DOMINIO/api/health
 docker compose --env-file .env.production -f compose.production.yml ps
 docker compose --env-file .env.production -f compose.production.yml logs --tail=200 web
-docker compose --env-file .env.production -f compose.production.yml logs --tail=200 caddy
+docker logs --tail=200 traefik
 ```
 
-Se o certificado não for emitido, confirme primeiro o DNS e as portas 80/443. Se `migrate` falhar, verifique `DATABASE_URL` e as credenciais iniciais antes de reiniciar o projeto.
+Se o certificado não for emitido, confirme o DNS, a rede externa `traefik-proxy` e o projeto Traefik da Hostinger. Se `migrate` falhar, verifique `DATABASE_URL` e as credenciais iniciais antes de reiniciar o projeto.

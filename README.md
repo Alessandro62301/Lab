@@ -93,7 +93,7 @@ Depois das migrations, execute `npm run db:seed` para os dados de demonstração
 
 ## Produção na Hostinger
 
-O repositório inclui imagem Next.js standalone, PostgreSQL privado, migrations automáticas, volume de mídia e HTTPS automático com Caddy. Veja o procedimento completo em `docs/DEPLOY_HOSTINGER.md`.
+O repositório inclui imagem Next.js standalone, PostgreSQL privado, migrations automáticas, volume de mídia e integração com o Traefik da Hostinger para domínio e HTTPS. Veja o procedimento completo em `docs/DEPLOY_HOSTINGER.md`.
 
 ## Central de IA
 

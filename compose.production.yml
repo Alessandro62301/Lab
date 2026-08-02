@@ -66,31 +66,22 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
-    networks: [internal]
-
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    environment:
-      APP_DOMAIN: ${APP_DOMAIN}
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      web:
-        condition: service_healthy
-    networks: [internal]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-proxy"
+      - "traefik.http.routers.lab.rule=Host(`${APP_DOMAIN}`)"
+      - "traefik.http.routers.lab.entrypoints=websecure"
+      - "traefik.http.routers.lab.tls.certresolver=letsencrypt"
+      - "traefik.http.services.lab.loadbalancer.server.port=3000"
+    networks:
+      - internal
+      - traefik-proxy
 
 networks:
   internal:
+  traefik-proxy:
+    external: true
 
 volumes:
   postgres_data:
   media_data:
-  caddy_data:
-  caddy_config:
