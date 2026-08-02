@@ -5,7 +5,7 @@ O ambiente de produção usa quatro serviços:
 - `postgres`: banco privado, sem porta publicada;
 - `migrate`: aplica migrations e cria o primeiro administrador de forma idempotente;
 - `web`: aplicação Next.js em modo standalone;
-- `traefik`: proxy reverso já fornecido pelo template da Hostinger, conectado pela rede externa `traefik-proxy`.
+- `traefik`: proxy reverso já fornecido pelo template da Hostinger. Na VPS atual ele opera pela rede `host` e descobre o container web pelos labels do Docker.
 
 ## 1. Pré-requisitos
 
@@ -82,4 +82,4 @@ docker compose --env-file .env.production -f compose.production.yml logs --tail=
 docker logs --tail=200 traefik
 ```
 
-Se o certificado não for emitido, confirme o DNS, a rede externa `traefik-proxy` e o projeto Traefik da Hostinger. Se `migrate` falhar, verifique `DATABASE_URL` e as credenciais iniciais antes de reiniciar o projeto.
+Se o certificado não for emitido, confirme o DNS e o projeto Traefik da Hostinger. Se `migrate` falhar, verifique `DATABASE_URL` e as credenciais iniciais antes de reiniciar o projeto.
