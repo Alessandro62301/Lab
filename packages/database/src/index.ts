@@ -1,2 +1,10 @@
 export { db } from "./client";
-export { FormFieldType, FormStatus, Prisma, PrismaClient } from "@prisma/client";
+export {
+  FormFieldType,
+  FormStatus,
+  PageBlockType,
+  Prisma,
+  PrismaClient,
+  PublicPageStatus,
+  WorkspaceRole,
+} from "../generated/client";

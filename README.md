@@ -87,7 +87,13 @@ exige no mínimo 90% de linhas e funções e 85% de ramificações nesse núcleo
 
 ## Autenticação
 
-`apps/web/src/server/auth/session.ts` expõe o contrato usado pelo servidor e retorna um usuário de desenvolvimento. Ao conectar Auth.js, mantenha `userId`, `workspaceId` e `role` como saída confiável da sessão. O frontend nunca deve escolher livremente o `workspaceId` de uma operação.
+O Lab usa Auth.js com credenciais, senha em hash bcrypt e sessão JWT assinada. A associação do usuário ao workspace é revalidada no banco a cada contexto protegido. O frontend nunca escolhe livremente o `workspaceId` de uma operação.
+
+Depois das migrations, execute `npm run db:seed` para os dados de demonstração ou `npm run db:bootstrap` para criar apenas o administrador e o workspace informados nas variáveis `INITIAL_*`. No ambiente local, o seed usa `junior@lab.local`, senha `lab-local-12345` e workspace `mavi-lab` quando nenhuma credencial for informada.
+
+## Produção na Hostinger
+
+O repositório inclui imagem Next.js standalone, PostgreSQL privado, migrations automáticas, volume de mídia e HTTPS automático com Caddy. Veja o procedimento completo em `docs/DEPLOY_HOSTINGER.md`.
 
 ## Central de IA
 
@@ -109,3 +115,9 @@ Abra `obsidian/lab` como vault ou copie a pasta para um vault existente. Comece 
 O Lab inclui um primeiro fluxo funcional de formulários em `/forms`. O seed cria o formulário de exemplo da Mavi, respostas e leads. A experiência pública fica em `/f/encomenda-mavi`.
 
 O projeto mantém também `apps/web/.env.example`, porque o Next.js executa a partir dessa pasta no monorepo. A configuração local já aponta para o PostgreSQL na porta `5433`.
+
+## Biblioteca global de mídia
+
+A rota `/media` reúne imagens de todo o workspace. Qualquer módulo pode abrir o mesmo seletor, reutilizar arquivos e enviar uma versão recortada e redimensionada. Em desenvolvimento, `MEDIA_STORAGE_PROVIDER="local"` grava os binários em `.data/media`; os metadados continuam no PostgreSQL.
+
+Para usar Google Drive, crie um cliente OAuth do tipo aplicação Web no Google Cloud, habilite a Drive API e cadastre `http://localhost:3000/api/media/google/callback` como URI autorizada. Preencha as variáveis `GOOGLE_DRIVE_*`, defina uma chave longa em `MEDIA_TOKEN_ENCRYPTION_KEY`, reinicie o Lab, acesse `/media`, conecte a conta e então altere `MEDIA_STORAGE_PROVIDER` para `google-drive`.

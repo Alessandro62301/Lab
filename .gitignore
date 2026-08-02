@@ -7,3 +7,5 @@ dist/
 *.tsbuildinfo
 .DS_Store
 packages/database/prisma/dev.db
+packages/database/generated/
+.data/

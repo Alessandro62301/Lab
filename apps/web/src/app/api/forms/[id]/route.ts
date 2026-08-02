@@ -49,7 +49,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     return NextResponse.json({ error: "Revise os campos do formulário." }, { status: 400 });
   }
 
-  const [{ id }, session] = await Promise.all([context.params, requireSession()]);
+  const [{ id }, session] = await Promise.all([
+    context.params,
+    requireSession(["OWNER", "ADMIN", "MEMBER"]),
+  ]);
   const workspace = await db.workspace.findUnique({ where: { slug: session.workspaceId } });
   if (!workspace) return NextResponse.json({ error: "Workspace não encontrado." }, { status: 404 });
 

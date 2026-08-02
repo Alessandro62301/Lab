@@ -10,11 +10,16 @@ atualizado_em: 2026-07-31
 - [x] Registrar o módulo e projeto no Lab.
 - [x] Mapear funcionalidades do Linktree.
 - [x] Definir métricas e direção visual.
-- [ ] Criar schema Prisma do MVP.
-- [ ] Criar editor de blocos.
-- [ ] Criar página pública.
-- [ ] Implementar redirecionamento rastreável.
-- [ ] Implementar coleta global de eventos.
-- [ ] Criar painel de métricas.
+- [x] Criar schema Prisma do MVP.
+- [x] Criar editor de blocos.
+- [x] Criar página pública.
+- [x] Implementar redirecionamento rastreável.
+- [x] Implementar coleta global de eventos.
+- [x] Criar painel de métricas.
+- [x] Permitir trocar a fonte da página e o ícone de cada link.
+- [x] Ajustar o tamanho global da tipografia e dos ícones com prévia imediata.
+- [ ] Criar e duplicar páginas pelo painel.
+- [ ] Implementar upload de imagens.
+- [ ] Trocar os controles de posição por reordenação com arrastar.
 - [ ] Integrar formulários e QR Codes.
 - [ ] Adicionar testes de unidade, API e fluxo público.

@@ -17,11 +17,14 @@ O Lab é a casa central para projetos, conhecimento, tarefas e automações.
 - [[Modulos]]
 - [[Arquitetura Geral]]
 - [[Backlog Geral]]
+- [[Retomar Modulo]]
 
 ## Projetos ativos
 
 - [[Lab Core]]
 - [[Data Inbox]]
+- [[Presenca]]
+- [[Captacao de Leads]]
 
 ## Princípio de organização
 

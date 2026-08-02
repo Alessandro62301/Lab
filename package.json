@@ -16,14 +16,22 @@
     "test:coverage": "vitest run --coverage",
     "db:generate": "npm run generate --workspace @lab/database",
     "db:migrate": "npm run migrate --workspace @lab/database",
+    "db:migrate:deploy": "npm run migrate:deploy --workspace @lab/database",
+    "db:bootstrap": "npm run bootstrap --workspace @lab/database",
     "db:seed": "npm run seed --workspace @lab/database",
     "db:studio": "npm run studio --workspace @lab/database"
   },
   "engines": {
     "node": ">=22"
   },
+  "overrides": {
+    "postcss": "$postcss",
+    "sharp": "$sharp"
+  },
   "devDependencies": {
     "@vitest/coverage-v8": "^3.2.4",
+    "postcss": "8.5.25",
+    "sharp": "0.35.3",
     "vitest": "^3.2.4"
   }
 }

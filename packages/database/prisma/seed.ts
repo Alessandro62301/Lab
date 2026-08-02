@@ -4,15 +4,18 @@ import {
   FormStatus,
   LeadStatus,
   ModuleStatus,
+  PageBlockType,
   PrismaClient,
   ProjectStatus,
+  PublicPageStatus,
   TaskPriority,
   TaskStatus,
   SubmissionStatus,
   WorkspaceRole,
-} from "@prisma/client";
+} from "../generated/client";
 import { config } from "dotenv";
 import { fileURLToPath } from "node:url";
+import { hash } from "bcryptjs";
 
 config({
   path: fileURLToPath(new URL("../../../.env", import.meta.url)),
@@ -21,10 +24,14 @@ config({
 const prisma = new PrismaClient();
 
 async function main() {
+  const adminEmail = (process.env.INITIAL_ADMIN_EMAIL ?? process.env.DEV_USER_EMAIL ?? "junior@lab.local").toLowerCase();
+  const adminPassword = process.env.INITIAL_ADMIN_PASSWORD ?? (process.env.NODE_ENV === "production" ? "" : "lab-local-12345");
+  if (adminPassword.length < 12) throw new Error("INITIAL_ADMIN_PASSWORD must have at least 12 characters");
+  const passwordHash = await hash(adminPassword, 12);
   const user = await prisma.user.upsert({
-    where: { email: "junior@lab.local" },
-    update: {},
-    create: { name: "Junior", email: "junior@lab.local" },
+    where: { email: adminEmail },
+    update: { passwordHash },
+    create: { name: process.env.INITIAL_ADMIN_NAME ?? "Junior", email: adminEmail, passwordHash },
   });
 
   const workspace = await prisma.workspace.upsert({
@@ -137,6 +144,144 @@ async function main() {
             ? ModuleStatus.PLANNED
             : ModuleStatus.ACTIVE,
       },
+    });
+  }
+
+  const presencePage = await prisma.publicPage.upsert({
+    where: {
+      workspaceId_name: {
+        workspaceId: workspace.id,
+        name: "Maria Victoria | Apple",
+      },
+    },
+    update: {
+      projectId: presence.id,
+      slug: "mavi",
+      status: PublicPageStatus.PUBLISHED,
+      publishedAt: new Date(),
+    },
+    create: {
+      workspaceId: workspace.id,
+      projectId: presence.id,
+      createdById: user.id,
+      name: "Maria Victoria | Apple",
+      slug: "mavi",
+      bio: "Importamos o seu sonho Apple com atendimento próximo, validação jurídica e nota fiscal.",
+      avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=240&q=85",
+      status: PublicPageStatus.PUBLISHED,
+      themeJson: {
+        backgroundColor: "#71384f",
+        surfaceColor: "#a34f76",
+        textColor: "#ffffff",
+        accentColor: "#b83872",
+        fontFamily: "Geist Mono",
+        fontSize: 14,
+        iconSize: 24,
+        borderRadius: 14,
+      },
+      publishedAt: new Date(),
+    },
+  });
+
+  const presenceBlocks = [
+    {
+      key: "como-funciona",
+      type: PageBlockType.LINK,
+      title: "Como funciona sua encomenda aqui na Mavi",
+      description: "Entenda o processo antes de escolher seu produto.",
+      url: "https://www.instagram.com/",
+      mediaUrl: null,
+      position: 0,
+      settingsJson: { icon: "instagram" },
+    },
+    {
+      key: "tabela-valores",
+      type: PageBlockType.LINK,
+      title: "Tabela de valores lacrados Mavi",
+      description: "Valores atualizados dos produtos disponíveis.",
+      url: "https://www.instagram.com/",
+      mediaUrl: null,
+      position: 1,
+      settingsJson: { icon: "badge-percent" },
+    },
+    {
+      key: "ofertas-whatsapp",
+      type: PageBlockType.LINK,
+      title: "Ofertas da Mavi | Comunidade do WhatsApp",
+      description: "Entre para receber oportunidades e novidades.",
+      url: "https://wa.me/5521999999999",
+      mediaUrl: null,
+      position: 2,
+      settingsJson: { icon: "message-circle" },
+    },
+    {
+      key: "atendimento-direto",
+      type: PageBlockType.FEATURE,
+      title: "Quer entender como fazer sua encomenda comigo?",
+      description: "Se sim, pode me chamar direto aqui no WhatsApp! 💗",
+      url: "https://wa.me/5521999999999",
+      mediaUrl: "https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?auto=format&fit=crop&w=900&q=85",
+      position: 3,
+      settingsJson: { layout: "media" },
+    },
+    {
+      key: "apple-empresas",
+      type: PageBlockType.LINK,
+      title: "Apple para empresas com condições exclusivas!",
+      description: "Atendimento personalizado para compras corporativas.",
+      url: "https://wa.me/5521999999999",
+      mediaUrl: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=180&q=80",
+      position: 4,
+      settingsJson: { compact: true },
+    },
+    {
+      key: "produto-apple",
+      type: PageBlockType.TEXT,
+      title: "Qual produto Apple está procurando?",
+      description: "Escolha o caminho mais rápido para encontrar seu próximo produto.",
+      url: null,
+      mediaUrl: null,
+      position: 5,
+      settingsJson: { align: "center" },
+    },
+    {
+      key: "galeria-produtos",
+      type: PageBlockType.GALLERY,
+      title: "Produtos em destaque",
+      description: "Uma seleção de produtos e cores disponíveis para encomenda.",
+      url: null,
+      mediaUrl: "https://images.unsplash.com/photo-1592286927505-1def25115558?auto=format&fit=crop&w=900&q=85",
+      position: 6,
+      settingsJson: {
+        images: [
+          "https://images.unsplash.com/photo-1592286927505-1def25115558?auto=format&fit=crop&w=700&q=85",
+          "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=700&q=85",
+          "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=700&q=85"
+        ]
+      },
+    },
+    {
+      key: "captar-encomenda",
+      type: PageBlockType.FORM,
+      title: "Quer adiantar sua encomenda?",
+      description: "Se você já sabe o produto que quer, preencha seus dados para continuarmos.",
+      url: "http://localhost:3000/f/encomenda-mavi",
+      mediaUrl: null,
+      position: 7,
+      settingsJson: { formSlug: "encomenda-mavi" },
+    },
+  ];
+
+  await prisma.pageBlock.updateMany({
+    where: { publicPageId: presencePage.id, archivedAt: null },
+    data: { position: { increment: 10000 } },
+  });
+
+  for (const block of presenceBlocks) {
+    await prisma.pageBlock.upsert({
+      where: { publicPageId_key: { publicPageId: presencePage.id, key: block.key } },
+      update: { ...block, archivedAt: null },
+      create: { ...block, publicPageId: presencePage.id },
     });
   }
 

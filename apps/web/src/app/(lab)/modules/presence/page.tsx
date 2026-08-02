@@ -1,134 +1,50 @@
-import {
-  ArrowUpRight,
-  Link2,
-  MessageCircle,
-  MousePointerClick,
-  UsersRound,
-} from "lucide-react";
+import Link from "next/link";
+import { BarChart3, ExternalLink, MousePointerClick, Pencil, UsersRound } from "lucide-react";
 
 import { PageHeading } from "@/components/layout/page-heading";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getPresenceDashboard } from "@/features/presence/server";
 
 export const metadata = { title: "Presença" };
 
-export default function PresenceModulePage() {
+function Metric({ label, value }: { label: string; value: string | number }) {
+  return <div className="rounded-xl border bg-muted/20 p-3"><p className="text-xl font-semibold tabular-nums">{value}</p><p className="mt-0.5 text-[11px] text-muted-foreground">{label}</p></div>;
+}
+
+export default async function PresenceModulePage() {
+  const pages = await getPresenceDashboard();
   return (
     <div className="flex flex-col gap-8">
-      <PageHeading
-        eyebrow="Módulo planejado"
-        title="Presença"
-        description="Páginas públicas de links e campanhas com identidade própria, captação de leads e métricas de ponta a ponta."
-        actions={<Button disabled>Criar página</Button>}
-      />
+      <PageHeading eyebrow="Módulo" title="Presença" description="Páginas públicas com identidade própria, blocos editoriais e métricas de acesso no mesmo lugar." />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.6fr)]">
-        <Card className="overflow-hidden">
-          <CardHeader>
-            <CardTitle>Uma página que parece uma marca</CardTitle>
-            <CardDescription>
-              O layout não será uma pilha genérica de botões. Cada página combina narrativa,
-              destaques e ações em um grid adaptável.
-            </CardDescription>
-            <CardAction><Badge variant="secondary">Direção visual</Badge></CardAction>
-          </CardHeader>
-          <CardContent>
-            <div className="grid min-h-[420px] gap-3 rounded-2xl border bg-muted/30 p-4 sm:grid-cols-2">
-              <div className="flex flex-col justify-between rounded-xl bg-primary p-6 text-primary-foreground sm:row-span-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="grid size-9 place-items-center rounded-full bg-background text-foreground">M</span>
-                  Mavi
+      <section className="grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader><CardTitle>Suas páginas</CardTitle><CardDescription>Cada página pode ter uma linguagem visual diferente — sem ficar presa a uma lista genérica de links.</CardDescription></CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            {pages.map((page) => (
+              <article key={page.id} className="grid gap-5 rounded-2xl border p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                <div className="flex min-w-0 items-center gap-4">
+                  <div className="grid size-14 shrink-0 place-items-center rounded-2xl text-lg font-semibold shadow-sm" style={{ background: page.theme.surfaceColor, color: page.theme.textColor }}>{page.name.slice(0, 2).toUpperCase()}</div>
+                  <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h2 className="truncate font-semibold">{page.name}</h2><Badge variant={page.status === "PUBLISHED" ? "default" : "secondary"}>{page.status === "PUBLISHED" ? "Publicada" : "Rascunho"}</Badge></div><p className="mt-1 truncate text-sm text-muted-foreground">lab.local/p/{page.slug} · {page.blocks.length} blocos</p></div>
                 </div>
-                <div>
-                  <p className="text-3xl font-semibold tracking-tight">Tecnologia que chega até você.</p>
-                  <p className="mt-3 text-sm opacity-80">Produtos, atendimento e novidades em um só lugar.</p>
+                <div className="flex items-center gap-2">
+                  <Link href={`/modules/presence/${page.id}/editor`} className="inline-flex h-8 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground"><Pencil className="size-3.5" /> Editar</Link>
+                  <Link href={`/p/${page.slug}`} target="_blank" className="grid size-8 place-items-center rounded-lg border hover:bg-muted" aria-label="Abrir página"><ExternalLink className="size-4" /></Link>
                 </div>
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  Falar no WhatsApp <ArrowUpRight />
-                </span>
-              </div>
-
-              <div className="flex flex-col justify-between rounded-xl border bg-background p-5">
-                <Badge variant="outline">Destaque da semana</Badge>
-                <div>
-                  <p className="text-xl font-semibold">iPhone 17</p>
-                  <p className="mt-1 text-sm text-muted-foreground">Condições especiais para encomenda.</p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:col-span-2">
+                  <Metric label="visualizações" value={page.metrics.views} /><Metric label="cliques" value={page.metrics.clicks} /><Metric label="visitantes únicos" value={page.metrics.uniqueVisitors} /><Metric label="taxa de clique" value={`${page.metrics.clickRate.toFixed(1)}%`} />
                 </div>
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  Ver campanha <ArrowUpRight />
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col justify-between rounded-xl border bg-background p-4">
-                  <MessageCircle className="text-muted-foreground" />
-                  <span className="text-sm font-medium">Atendimento</span>
-                </div>
-                <div className="flex flex-col justify-between rounded-xl border bg-background p-4">
-                  <Link2 className="text-muted-foreground" />
-                  <span className="text-sm font-medium">Catálogo</span>
-                </div>
-              </div>
-            </div>
+              </article>
+            ))}
           </CardContent>
-          <CardFooter className="justify-between">
-            <span className="text-xs text-muted-foreground">Prévia conceitual · celular e desktop</span>
-            <Badge variant="outline">Não genérico</Badge>
-          </CardFooter>
         </Card>
 
         <div className="flex flex-col gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Métricas do funil</CardTitle>
-              <CardDescription>Todos os números partem dos mesmos eventos do Lab.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl border p-4">
-                <MousePointerClick className="text-muted-foreground" />
-                <p className="mt-5 text-2xl font-semibold">CTR</p>
-                <p className="text-xs text-muted-foreground">geral e por bloco</p>
-              </div>
-              <div className="rounded-xl border p-4">
-                <UsersRound className="text-muted-foreground" />
-                <p className="mt-5 text-2xl font-semibold">Únicos</p>
-                <p className="text-xs text-muted-foreground">visitas e cliques</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Escopo do MVP</CardTitle>
-              <CardDescription>Páginas, blocos, links e conversão antes de recursos comerciais.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {["Editor visual", "Agendamento", "Formulários", "QR Code", "UTM", "Exportação"].map((item) => (
-                <Badge key={item} variant="secondary">{item}</Badge>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Próximo marco</CardTitle>
-              <CardDescription>Modelar páginas e eventos antes de iniciar o editor.</CardDescription>
-            </CardHeader>
-            <CardFooter>
-              <Badge variant="outline">Pesquisa concluída</Badge>
-            </CardFooter>
-          </Card>
+          <Card><CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="size-4" /> Métricas de verdade</CardTitle><CardDescription>Visualizações e cliques são gravados por página e por bloco. O visitante é anônimo.</CardDescription></CardHeader><CardContent className="flex gap-2"><Badge variant="secondary"><UsersRound /> únicos</Badge><Badge variant="secondary"><MousePointerClick /> CTR</Badge></CardContent></Card>
+          <Card><CardHeader><CardTitle>Comece pela Mavi</CardTitle><CardDescription>A primeira composição reproduz a linguagem da sua página atual: vinho, rosa, cards compactos, mídia e galeria sobreposta.</CardDescription></CardHeader></Card>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

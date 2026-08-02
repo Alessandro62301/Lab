@@ -1,5 +1,5 @@
 ---
-status: planned
+status: active
 tipo: projeto
 criado_em: 2026-07-31
 atualizado_em: 2026-07-31
@@ -19,5 +19,10 @@ ricos e métricas conectadas ao restante do Lab.
 - métricas de audiência e conversão;
 - integração nativa com [[Captacao de Leads]] e [[Gerador de QR Code]];
 - múltiplas páginas dentro do mesmo workspace.
+
+## Implementação atual
+
+O MVP funcional possui página pública, editor por blocos, tema individual e métricas de
+visualizações e cliques. Para continuar o desenvolvimento, comece em [[Presenca - Retomada]].
 
 Ver [[MVP]], [[Funcionalidades]], [[Metricas]], [[Design]] e [[Pesquisa Linktree]].

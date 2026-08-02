@@ -1,12 +1,18 @@
 import Link from "next/link";
-import { Bell, ChevronsUpDown, Command, Plus, Search } from "lucide-react";
+import { Bell, Command, Plus, Search } from "lucide-react";
 import { AppNav } from "@/components/layout/app-nav";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { LogoutButton } from "@/components/auth/logout-button";
+import type { LabSession } from "@/server/auth/session";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+function initials(name: string) {
+  return name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+}
+
+export function AppShell({ children, session }: { children: React.ReactNode; session: LabSession }) {
   return (
     <div className="min-h-screen bg-muted/30">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r bg-sidebar lg:flex lg:flex-col">
@@ -16,28 +22,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               L
             </span>
             <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold">Mavi Lab</span>
-              <span className="block truncate text-xs text-muted-foreground">Workspace pessoal</span>
+              <span className="block truncate text-sm font-semibold">Lab</span>
+              <span className="block truncate text-xs text-muted-foreground">{session.workspaceId}</span>
             </span>
           </Link>
-          <Button variant="ghost" size="icon-sm" aria-label="Trocar workspace">
-            <ChevronsUpDown />
-          </Button>
         </div>
         <Separator />
         <AppNav />
         <Separator />
         <div className="flex items-center gap-3 p-4">
           <Avatar className="size-8">
-            <AvatarFallback>JR</AvatarFallback>
+            <AvatarFallback>{initials(session.user.name)}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">Junior</p>
-            <p className="truncate text-xs text-muted-foreground">Owner</p>
+            <p className="truncate text-sm font-medium">{session.user.name}</p>
+            <p className="truncate text-xs text-muted-foreground">{session.role}</p>
           </div>
-          <kbd className="rounded border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-            ⌘K
-          </kbd>
+          <LogoutButton />
         </div>
       </aside>
 

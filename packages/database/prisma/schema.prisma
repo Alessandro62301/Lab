@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../generated/client"
 }
 
 datasource db {
@@ -52,11 +53,38 @@ enum AiProvider {
   LOCAL
 }
 
+enum MediaStorageProvider {
+  LOCAL
+  GOOGLE_DRIVE
+}
+
+enum StorageConnectionStatus {
+  DISCONNECTED
+  CONNECTED
+  ERROR
+}
+
 enum FormStatus {
   DRAFT
   PUBLISHED
   PAUSED
   ARCHIVED
+}
+
+enum PublicPageStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+}
+
+enum PageBlockType {
+  LINK
+  FEATURE
+  TEXT
+  IMAGE
+  GALLERY
+  FORM
 }
 
 enum FormFieldType {
@@ -117,6 +145,7 @@ model User {
   id            String       @id @default(cuid())
   name          String?
   email         String       @unique
+  passwordHash  String?
   emailVerified DateTime?
   image         String?
   memberships   Membership[]
@@ -124,27 +153,78 @@ model User {
   createdTasks  Task[]       @relation("TaskCreator")
   assignedTasks Task[]       @relation("TaskAssignee")
   createdForms  Form[]       @relation("FormCreator")
+  createdPages  PublicPage[] @relation("PublicPageCreator")
+  uploadedMedia MediaAsset[] @relation("MediaAssetUploader")
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 }
 
 model Workspace {
-  id          String          @id @default(cuid())
-  name        String
-  slug        String          @unique
-  description String?
-  memberships Membership[]
-  projects    Project[]
-  notes       Note[]
-  tasks       Task[]
-  modules     WorkspaceModule[]
-  aiConfigs   AiProviderConfig[]
-  forms       Form[]
-  submissions FormSubmission[]
-  leads       Lead[]
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  archivedAt  DateTime?
+  id              String             @id @default(cuid())
+  name            String
+  slug            String             @unique
+  description     String?
+  memberships     Membership[]
+  projects        Project[]
+  notes           Note[]
+  tasks           Task[]
+  modules         WorkspaceModule[]
+  aiConfigs       AiProviderConfig[]
+  forms           Form[]
+  submissions     FormSubmission[]
+  leads           Lead[]
+  publicPages     PublicPage[]
+  analyticsEvents AnalyticsEvent[]
+  mediaAssets     MediaAsset[]
+  storageConnections StorageConnection[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  archivedAt      DateTime?
+}
+
+model StorageConnection {
+  id                    String                  @id @default(cuid())
+  workspaceId           String
+  provider              MediaStorageProvider
+  status                StorageConnectionStatus @default(DISCONNECTED)
+  accountLabel          String?
+  rootFolderId          String?
+  encryptedAccessToken  String?                 @db.Text
+  encryptedRefreshToken String?                 @db.Text
+  accessTokenExpiresAt  DateTime?
+  settingsJson          Json?
+  workspace             Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  @@unique([workspaceId, provider])
+}
+
+model MediaAsset {
+  id             String               @id @default(cuid())
+  workspaceId    String
+  uploadedById   String
+  sourceAssetId  String?
+  provider       MediaStorageProvider @default(LOCAL)
+  providerFileId String?
+  storageKey     String
+  name           String
+  mimeType       String
+  size           Int
+  width          Int?
+  height         Int?
+  altText        String?
+  metadataJson   Json?
+  workspace      Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  uploadedBy     User                 @relation("MediaAssetUploader", fields: [uploadedById], references: [id])
+  sourceAsset    MediaAsset?          @relation("MediaAssetVariants", fields: [sourceAssetId], references: [id], onDelete: SetNull)
+  variants       MediaAsset[]         @relation("MediaAssetVariants")
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  archivedAt     DateTime?
+
+  @@index([workspaceId, createdAt])
+  @@index([provider, providerFileId])
 }
 
 model Membership {
@@ -161,22 +241,23 @@ model Membership {
 }
 
 model Project {
-  id          String        @id @default(cuid())
+  id          String            @id @default(cuid())
   workspaceId String
   name        String
   slug        String
   description String?
   icon        String?
-  status      ProjectStatus @default(PLANNING)
-  progress    Int           @default(0)
+  status      ProjectStatus     @default(PLANNING)
+  progress    Int               @default(0)
   dueDate     DateTime?
-  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace   Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   notes       Note[]
   tasks       Task[]
   modules     WorkspaceModule[]
   forms       Form[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  publicPages PublicPage[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
   archivedAt  DateTime?
 
   @@unique([workspaceId, slug])
@@ -293,7 +374,7 @@ model Form {
   description         String?
   status              FormStatus       @default(DRAFT)
   welcomeTitle        String           @default("Olá! Vamos começar?")
-  welcomeDescription String?
+  welcomeDescription  String?
   thankYouTitle       String           @default("Tudo certo!")
   thankYouDescription String?
   buttonLabel         String           @default("Continuar")
@@ -322,24 +403,24 @@ model Form {
 }
 
 model FormField {
-  id              String           @id @default(cuid())
-  formId          String
-  key             String
-  type            FormFieldType
-  title           String
-  description     String?
-  placeholder     String?
-  position        Int
-  isRequired      Boolean          @default(false)
-  optionsJson     Json?
-  settingsJson    Json?
-  form            Form             @relation(fields: [formId], references: [id], onDelete: Cascade)
-  answers         FormAnswer[]
-  sourceRules     FormLogicRule[]   @relation("LogicSourceField")
-  targetRules     FormLogicRule[]   @relation("LogicTargetField")
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  archivedAt      DateTime?
+  id           String          @id @default(cuid())
+  formId       String
+  key          String
+  type         FormFieldType
+  title        String
+  description  String?
+  placeholder  String?
+  position     Int
+  isRequired   Boolean         @default(false)
+  optionsJson  Json?
+  settingsJson Json?
+  form         Form            @relation(fields: [formId], references: [id], onDelete: Cascade)
+  answers      FormAnswer[]
+  sourceRules  FormLogicRule[] @relation("LogicSourceField")
+  targetRules  FormLogicRule[] @relation("LogicTargetField")
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  archivedAt   DateTime?
 
   @@unique([formId, key])
   @@unique([formId, position])
@@ -429,4 +510,76 @@ model Lead {
   @@unique([workspaceId, emailNormalized])
   @@unique([workspaceId, phoneNormalized])
   @@index([workspaceId, status, lastSeenAt])
+}
+
+model PublicPage {
+  id          String           @id @default(cuid())
+  workspaceId String
+  projectId   String?
+  createdById String
+  name        String
+  slug        String           @unique
+  bio         String?
+  avatarUrl   String?
+  status      PublicPageStatus @default(DRAFT)
+  themeJson   Json
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project     Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdBy   User             @relation("PublicPageCreator", fields: [createdById], references: [id])
+  blocks      PageBlock[]
+  events      AnalyticsEvent[]
+  publishedAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  archivedAt  DateTime?
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId, status])
+  @@index([projectId])
+}
+
+model PageBlock {
+  id           String        @id @default(cuid())
+  publicPageId String
+  key          String
+  type         PageBlockType
+  title        String
+  description  String?
+  url          String?
+  mediaUrl     String?
+  position     Int
+  isVisible    Boolean       @default(true)
+  settingsJson Json?
+  publicPage   PublicPage    @relation(fields: [publicPageId], references: [id], onDelete: Cascade)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  archivedAt   DateTime?
+
+  @@unique([publicPageId, key])
+  @@unique([publicPageId, position])
+  @@index([publicPageId, type])
+}
+
+model AnalyticsEvent {
+  id           String      @id @default(cuid())
+  workspaceId  String
+  pageId       String?
+  moduleKey    String
+  entityType   String
+  entityId     String?
+  eventName    String
+  anonymousId  String?
+  sessionId    String?
+  path         String?
+  referrer     String?
+  metadataJson Json?
+  occurredAt   DateTime    @default(now())
+  createdAt    DateTime    @default(now())
+  workspace    Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  page         PublicPage? @relation(fields: [pageId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, moduleKey, eventName, occurredAt])
+  @@index([pageId, eventName, occurredAt])
+  @@index([entityType, entityId, eventName])
+  @@index([anonymousId, occurredAt])
 }

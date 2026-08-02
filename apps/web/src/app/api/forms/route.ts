@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Nome do formulário inválido." }, { status: 400 });
   }
 
-  const session = await requireSession();
+  const session = await requireSession(["OWNER", "ADMIN", "MEMBER"]);
   const [workspace, user] = await Promise.all([
     db.workspace.findUnique({ where: { slug: session.workspaceId } }),
     db.user.findUnique({ where: { email: session.user.email } }),

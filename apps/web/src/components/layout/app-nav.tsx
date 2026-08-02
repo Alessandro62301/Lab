@@ -7,6 +7,7 @@ import {
   CheckSquare2,
   CircleHelp,
   ContactRound,
+  Images,
   LayoutDashboard,
   NotebookPen,
   PanelsTopLeft,
@@ -21,6 +22,7 @@ const primaryItems = [
   { label: "Notas", href: "/notes", icon: NotebookPen },
   { label: "Tarefas", href: "/tasks", icon: CheckSquare2 },
   { label: "Captar leads", href: "/forms", icon: ContactRound },
+  { label: "Mídia", href: "/media", icon: Images },
   { label: "Central de IA", href: "/ai", icon: Bot },
 ];
 

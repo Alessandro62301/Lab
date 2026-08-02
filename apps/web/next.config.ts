@@ -7,6 +7,8 @@ const appDirectory = path.dirname(fileURLToPath(import.meta.url));
 loadEnvConfig(path.resolve(appDirectory, "../.."));
 
 const nextConfig: NextConfig = {
+  output: "standalone",
+  outputFileTracingRoot: path.resolve(appDirectory, "../.."),
   transpilePackages: ["@lab/database"],
 };
 

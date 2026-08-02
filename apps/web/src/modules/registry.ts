@@ -4,6 +4,7 @@ import {
   FolderKanban,
   Inbox,
   Link2,
+  Images,
   NotebookPen,
   PanelsTopLeft,
   QrCode,
@@ -21,6 +22,15 @@ export type LabModule = {
 };
 
 export const moduleRegistry: LabModule[] = [
+  {
+    key: "media-library",
+    name: "Biblioteca de mídia",
+    description: "Galeria global, recorte, redimensionamento e armazenamento no Google Drive.",
+    href: "/media",
+    icon: Images,
+    status: "active",
+    projectScoped: false,
+  },
   {
     key: "lead-capture",
     name: "Captação de leads",
